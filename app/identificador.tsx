@@ -433,7 +433,7 @@ export function Identificador() {
               ) : null}
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="mt-10 flex flex-wrap items-center gap-3">
               {enVivo ? (
                 <button type="button" onClick={pausar} className={`${boton} liquid-glass text-ink`}>
                   <Pause size={20} weight="fill" />
