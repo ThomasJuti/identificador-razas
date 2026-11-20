@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
+  CameraRotate,
   ImageSquare,
   Pause,
   SpinnerGap,
@@ -12,6 +13,7 @@ import type { Identificacion } from "@/lib/schema";
 import { proyectarCaja, type Marco } from "@/lib/proyectar";
 
 type Fase = "idle" | "mirando" | "identificando" | "pausado";
+type Lado = "environment" | "user";
 type Codigo =
   | "falta_clave"
   | "imagen_vacia"
@@ -121,8 +123,10 @@ export function Identificador() {
   const tokenRef = useRef(0);
   const archivoRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<string | null>(null);
+  const cambiandoRef = useRef(false);
 
   const [fase, setFase] = useState<Fase>("idle");
+  const [lado, setLado] = useState<Lado>("environment");
   const [enVivo, setEnVivo] = useState(false);
   const [camaraLista, setCamaraLista] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -220,6 +224,49 @@ export function Identificador() {
     }
   }
 
+  async function abrirCamara(ladoPedido: Lado) {
+    const intentos: MediaTrackConstraints[] = [
+      { facingMode: { exact: ladoPedido }, width: { ideal: 1280 } },
+      { facingMode: ladoPedido, width: { ideal: 1280 } },
+      { width: { ideal: 1280 } },
+    ];
+    let stream: MediaStream | null = null;
+    for (const video of intentos) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+        break;
+      } catch {
+        stream = null;
+      }
+    }
+    if (!stream) throw new Error("camara");
+
+    streamRef.current?.getTracks().forEach((pista) => pista.stop());
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+    }
+    const real = stream.getVideoTracks()[0]?.getSettings().facingMode;
+    setLado(real === "user" || real === "environment" ? real : ladoPedido);
+    setCamaraLista(true);
+    setCaja(null);
+  }
+
+  async function cambiarLado() {
+    if (cambiandoRef.current) return;
+    cambiandoRef.current = true;
+    const siguiente: Lado = lado === "environment" ? "user" : "environment";
+    try {
+      await abrirCamara(siguiente);
+      setError(null);
+    } catch {
+      setError("camara");
+    } finally {
+      cambiandoRef.current = false;
+    }
+  }
+
   async function empezar() {
     setError(null);
     if (preview) {
@@ -229,16 +276,7 @@ export function Identificador() {
 
     if (!streamRef.current) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 } },
-          audio: false,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        setCamaraLista(true);
+        await abrirCamara("environment");
       } catch {
         setError("camara");
         setFase("idle");
@@ -381,6 +419,17 @@ export function Identificador() {
                   )}
                   {fase === "identificando" ? "Identificando" : "Mirando"}
                 </p>
+              ) : null}
+              {camaraLista && !preview ? (
+                <button
+                  type="button"
+                  onClick={() => void cambiarLado()}
+                  aria-label={lado === "environment" ? "Usar cámara frontal" : "Usar cámara trasera"}
+                  className="liquid-glass absolute right-4 bottom-4 z-20 inline-flex h-12 items-center gap-2 rounded-full px-4 text-sm font-medium text-ink transition duration-200 active:scale-[0.98]"
+                >
+                  <CameraRotate size={20} />
+                  {lado === "environment" ? "Trasera" : "Frontal"}
+                </button>
               ) : null}
             </div>
 
