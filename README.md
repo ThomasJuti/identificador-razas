@@ -17,23 +17,4 @@ npm run dev
 
 Abre http://localhost:3000. `GEMINI_MODEL` por defecto es `gemini-3.5-flash-lite`, el más rápido para el bucle. Si las razas salen flojas, cámbialo a `gemini-4-hydrogen`.
 
-## Desplegar en Vercel
 
-El proyecto es Next.js y se despliega tal cual. En el proyecto de Vercel, en Settings → Environment Variables, agrega las mismas dos variables para Production y Preview:
-
-- `GOOGLE_GENERATIVE_AI_API_KEY`
-- `GEMINI_MODEL` (opcional)
-
-No pongas la clave en el cliente ni en el repositorio.
-
-## Qué decir en la sustentación
-
-El programa usa un modelo multimodal que ya conoce cientos de razas. Por eso no hay un dataset propio ni una red entrenada en clase: con 12 razas el modelo se equivocaría más y no cubriría un mestizo.
-
-Límites que conviene nombrar:
-
-- Hace falta internet y la clave de la API.
-- La seguridad que se muestra es una estimación del modelo, no una probabilidad calibrada.
-- Las razas parecidas y los mestizos se confunden.
-- Dejar la cámara prendida gasta la cuota, porque cada respuesta es una llamada.
-- No diagnostica la salud del animal.
